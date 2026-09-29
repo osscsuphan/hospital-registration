@@ -6,7 +6,6 @@
 
   <title>ลงทะเบียนเข้าร่วม OpenChat</title>
 
-  <!-- LINE LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
@@ -192,91 +191,262 @@
 
 </div>
 
+
 <script>
 
   const LIFF_ID = '2011774617-WRY44KK3';
 
+  /*
+   * นำ Web App URL ของ Apps Script
+   * ที่ลงท้ายด้วย /exec มาใส่ตรงนี้
+   */
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzsEBT5BGtx1do4JVTkRo0cxdVuFTr-nvxV9-Az45kz5oe8RQBjmr3fVMzfk34znejg/exec';
+
+
   let lineUserId = '';
   let lineDisplayName = '';
 
+
   async function initializeLiff() {
 
-    const status = document.getElementById('lineStatus');
-    const button = document.getElementById('submitButton');
+    const status =
+      document.getElementById('lineStatus');
+
+    const button =
+      document.getElementById('submitButton');
 
     try {
-
-      status.textContent = '1/4 กำลังตรวจสอบ LIFF SDK...';
-
-      if (typeof liff === 'undefined') {
-        throw new Error('โหลด LIFF SDK ไม่สำเร็จ');
-      }
-
-      status.textContent = '2/4 กำลังเริ่มต้น LIFF...';
 
       await liff.init({
         liffId: LIFF_ID
       });
 
-      status.textContent = '3/4 LIFF เริ่มต้นสำเร็จ';
 
       if (!liff.isLoggedIn()) {
-
-        status.textContent = 'กำลังเข้าสู่ระบบ LINE...';
 
         liff.login();
         return;
       }
 
-      status.textContent = '4/4 กำลังอ่านข้อมูล LINE...';
 
-      const profile = await liff.getProfile();
+      const profile =
+        await liff.getProfile();
 
-      lineUserId = profile.userId;
-      lineDisplayName = profile.displayName;
+
+      lineUserId =
+        profile.userId;
+
+      lineDisplayName =
+        profile.displayName;
+
 
       status.textContent =
-        'เชื่อมต่อ LINE แล้ว : ' + lineDisplayName;
+        'เชื่อมต่อ LINE แล้ว : ' +
+        lineDisplayName;
 
-      status.style.background = '#e8f7ed';
-      status.style.color = '#166534';
+      status.style.background =
+        '#e8f7ed';
+
+      status.style.color =
+        '#166534';
+
 
       button.disabled = false;
       button.textContent = 'ลงทะเบียน';
+
 
     } catch (error) {
 
       console.error(error);
 
       status.textContent =
-        'ERROR: ' +
-        (error.code ? error.code + ' - ' : '') +
-        (error.message || String(error));
+        'ไม่สามารถเชื่อมต่อบัญชี LINE ได้';
 
-      status.style.background = '#fdecec';
-      status.style.color = '#b42318';
+      status.style.background =
+        '#fdecec';
+
+      status.style.color =
+        '#b42318';
 
       button.disabled = true;
-      button.textContent = 'ไม่สามารถลงทะเบียนได้';
+
+      button.textContent =
+        'ไม่สามารถลงทะเบียนได้';
     }
   }
 
 
+
   document
     .getElementById('registerForm')
-    .addEventListener('submit', function(event) {
+    .addEventListener(
+      'submit',
+      async function(event) {
 
-      event.preventDefault();
+        event.preventDefault();
 
-      const message = document.getElementById('message');
 
-      message.textContent =
-        'ทดสอบสำเร็จ — เชื่อมต่อบัญชี LINE ได้แล้ว : ' +
-        lineDisplayName;
+        const button =
+          document.getElementById(
+            'submitButton'
+          );
 
-      message.className = 'success';
+        const message =
+          document.getElementById(
+            'message'
+          );
 
-    });
+
+        if (!lineUserId) {
+
+          message.textContent =
+            'ไม่พบข้อมูลบัญชี LINE กรุณาเปิดแบบฟอร์มผ่าน LINE';
+
+          message.className =
+            'error';
+
+          return;
+        }
+
+
+        const fullName =
+          document
+            .getElementById('fullName')
+            .value
+            .trim();
+
+        const facilityName =
+          document
+            .getElementById('facilityName')
+            .value
+            .trim();
+
+        const position =
+          document
+            .getElementById('position')
+            .value
+            .trim();
+
+
+        if (
+          !fullName ||
+          !facilityName ||
+          !position
+        ) {
+
+          message.textContent =
+            'กรุณากรอกข้อมูลให้ครบทุกช่อง';
+
+          message.className =
+            'error';
+
+          return;
+        }
+
+
+        button.disabled = true;
+        button.textContent =
+          'กำลังบันทึก...';
+
+        message.style.display =
+          'none';
+
+
+        try {
+
+          const formData =
+            new URLSearchParams();
+
+          formData.append(
+            'lineUserId',
+            lineUserId
+          );
+
+          formData.append(
+            'lineDisplayName',
+            lineDisplayName
+          );
+
+          formData.append(
+            'fullName',
+            fullName
+          );
+
+          formData.append(
+            'facilityName',
+            facilityName
+          );
+
+          formData.append(
+            'position',
+            position
+          );
+
+
+          /*
+           * ส่งข้อมูลไป Google Apps Script
+           *
+           * no-cors ใช้เพื่อหลีกเลี่ยง
+           * ปัญหา CORS ระหว่าง GitHub Pages
+           * กับ Apps Script
+           */
+          await fetch(
+            API_URL,
+            {
+              method: 'POST',
+
+              mode: 'no-cors',
+
+              headers: {
+                'Content-Type':
+                  'application/x-www-form-urlencoded'
+              },
+
+              body:
+                formData.toString()
+            }
+          );
+
+
+          message.textContent =
+            'ส่งข้อมูลลงทะเบียนเรียบร้อยแล้ว กรุณารอเจ้าหน้าที่ตรวจสอบ';
+
+          message.className =
+            'success';
+
+
+          document
+            .getElementById(
+              'registerForm'
+            )
+            .reset();
+
+
+          button.disabled = true;
+
+          button.textContent =
+            'ลงทะเบียนแล้ว';
+
+
+        } catch (error) {
+
+          console.error(error);
+
+
+          message.textContent =
+            'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
+
+          message.className =
+            'error';
+
+
+          button.disabled = false;
+
+          button.textContent =
+            'ลงทะเบียน';
+        }
+      }
+    );
 
 
   initializeLiff();

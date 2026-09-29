@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
   <title>ลงทะเบียนเข้าร่วม OpenChat</title>
 
@@ -114,10 +115,20 @@
       color: #166534;
     }
 
+    .warning {
+      display: block !important;
+      background: #fff7e6;
+      color: #8a5700;
+    }
+
     .error {
       display: block !important;
       background: #fdecec;
       color: #b42318;
+    }
+
+    #responseFrame {
+      display: none;
     }
   </style>
 </head>
@@ -137,9 +148,29 @@
     กำลังเชื่อมต่อบัญชี LINE...
   </div>
 
-  <form id="registerForm">
+  <form
+    id="registerForm"
+    method="POST"
+    target="responseFrame">
+
+    <input
+      type="hidden"
+      id="lineUserId"
+      name="lineUserId">
+
+    <input
+      type="hidden"
+      id="lineDisplayName"
+      name="lineDisplayName">
+
+    <input
+      type="hidden"
+      id="idToken"
+      name="idToken">
+
 
     <div class="form-group">
+
       <label>
         ชื่อ-นามสกุล
         <span class="required">*</span>
@@ -148,11 +179,15 @@
       <input
         type="text"
         id="fullName"
+        name="fullName"
         placeholder="กรอกชื่อ-นามสกุล"
         required>
+
     </div>
 
+
     <div class="form-group">
+
       <label>
         ชื่อสถานพยาบาล
         <span class="required">*</span>
@@ -161,11 +196,15 @@
       <input
         type="text"
         id="facilityName"
+        name="facilityName"
         placeholder="กรอกชื่อสถานพยาบาล"
         required>
+
     </div>
 
+
     <div class="form-group">
+
       <label>
         ตำแหน่ง / หน้าที่
         <span class="required">*</span>
@@ -174,9 +213,12 @@
       <input
         type="text"
         id="position"
+        name="position"
         placeholder="เช่น ผู้รับอนุญาต ผู้ดำเนินการ เจ้าหน้าที่"
         required>
+
     </div>
+
 
     <button
       type="submit"
@@ -187,20 +229,25 @@
 
   </form>
 
+
   <div id="message"></div>
 
 </div>
 
 
+<iframe
+  id="responseFrame"
+  name="responseFrame">
+</iframe>
+
+
 <script>
 
-  const LIFF_ID = '2011774617-WRY44KK3';
+  const LIFF_ID =
+    '2011774617-WRY44KK3';
 
-  /*
-   * นำ Web App URL ของ Apps Script
-   * ที่ลงท้ายด้วย /exec มาใส่ตรงนี้
-   */
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzsEBT5BGtx1do4JVTkRo0cxdVuFTr-nvxV9-Az45kz5oe8RQBjmr3fVMzfk34znejg/exec';
+  const API_URL =
+    'https://script.google.com/macros/s/AKfycbzsEBT5BGtx1do4JVTkRo0cxdVuFTr-nvxV9-Az45kz5oe8RQBjmr3fVMzfk34znejg/exec';
 
 
   let lineUserId = '';
@@ -215,6 +262,7 @@
 
     const button =
       document.getElementById('submitButton');
+
 
     try {
 
@@ -243,11 +291,26 @@
       lineIdToken =
         liff.getIDToken();
 
+
       if (!lineIdToken) {
+
         throw new Error(
           'ไม่สามารถรับ LINE ID Token ได้'
         );
       }
+
+
+      document
+        .getElementById('lineUserId')
+        .value = lineUserId;
+
+      document
+        .getElementById('lineDisplayName')
+        .value = lineDisplayName;
+
+      document
+        .getElementById('idToken')
+        .value = lineIdToken;
 
 
       status.textContent =
@@ -286,15 +349,14 @@
   }
 
 
-
+  /*
+   * ก่อนส่ง Form
+   */
   document
     .getElementById('registerForm')
     .addEventListener(
       'submit',
-      async function(event) {
-
-        event.preventDefault();
-
+      function(event) {
 
         const button =
           document.getElementById(
@@ -307,7 +369,12 @@
           );
 
 
-        if (!lineUserId) {
+        if (
+          !lineUserId ||
+          !lineIdToken
+        ) {
+
+          event.preventDefault();
 
           message.textContent =
             'ไม่พบข้อมูลบัญชี LINE กรุณาเปิดแบบฟอร์มผ่าน LINE';
@@ -319,149 +386,153 @@
         }
 
 
-        const fullName =
-          document
-            .getElementById('fullName')
-            .value
-            .trim();
-
-        const facilityName =
-          document
-            .getElementById('facilityName')
-            .value
-            .trim();
-
-        const position =
-          document
-            .getElementById('position')
-            .value
-            .trim();
-
-
-        if (
-          !fullName ||
-          !facilityName ||
-          !position
-        ) {
-
-          message.textContent =
-            'กรุณากรอกข้อมูลให้ครบทุกช่อง';
-
-          message.className =
-            'error';
-
-          return;
-        }
+        /*
+         * ส่ง POST ไป Apps Script
+         * ผ่าน hidden iframe
+         */
+        this.action = API_URL;
 
 
         button.disabled = true;
+
         button.textContent =
-          'กำลังบันทึก...';
+          'กำลังตรวจสอบ...';
+
 
         message.style.display =
           'none';
 
-
-        try {
-
-          const formData =
-            new URLSearchParams();
-
-          formData.append(
-            'lineUserId',
-            lineUserId
-          );
-
-          formData.append(
-            'lineDisplayName',
-            lineDisplayName
-          );
-
-          formData.append(
-            'idToken',
-            lineIdToken
-          );
-
-          formData.append(
-            'fullName',
-            fullName
-          );
-
-          formData.append(
-            'facilityName',
-            facilityName
-          );
-
-          formData.append(
-            'position',
-            position
-          );
-
-
-          /*
-           * ส่งข้อมูลไป Google Apps Script
-           *
-           * no-cors ใช้เพื่อหลีกเลี่ยง
-           * ปัญหา CORS ระหว่าง GitHub Pages
-           * กับ Apps Script
-           */
-          await fetch(
-            API_URL,
-            {
-              method: 'POST',
-
-              mode: 'no-cors',
-
-              headers: {
-                'Content-Type':
-                  'application/x-www-form-urlencoded'
-              },
-
-              body:
-                formData.toString()
-            }
-          );
-
-
-          message.textContent =
-            'ส่งข้อมูลลงทะเบียนเรียบร้อยแล้ว กรุณารอเจ้าหน้าที่ตรวจสอบ';
-
-          message.className =
-            'success';
-
-
-          document
-            .getElementById(
-              'registerForm'
-            )
-            .reset();
-
-
-          button.disabled = true;
-
-          button.textContent =
-            'ลงทะเบียนแล้ว';
-
-
-        } catch (error) {
-
-          console.error(error);
-
-
-          message.textContent =
-            'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
-
-          message.className =
-            'error';
-
-
-          button.disabled = false;
-
-          button.textContent =
-            'ลงทะเบียน';
-        }
+        message.className = '';
       }
     );
+
+
+  /*
+   * รับผลจาก Apps Script
+   */
+  window.addEventListener(
+    'message',
+    function(event) {
+
+      /*
+       * Apps Script HTML อาจทำงานผ่าน
+       * googleusercontent.com
+       */
+      const validOrigin =
+        event.origin.endsWith(
+          '.googleusercontent.com'
+        );
+
+
+      if (!validOrigin) {
+        return;
+      }
+
+
+      const data =
+        event.data;
+
+
+      if (
+        !data ||
+        data.source !==
+          'hospital-registration' ||
+        !data.result
+      ) {
+        return;
+      }
+
+
+      const result =
+        data.result;
+
+
+      const message =
+        document.getElementById(
+          'message'
+        );
+
+      const button =
+        document.getElementById(
+          'submitButton'
+        );
+
+
+      message.textContent =
+        result.message ||
+        'ดำเนินการเรียบร้อยแล้ว';
+
+
+      /*
+       * ลงทะเบียน/ยื่นใหม่สำเร็จ
+       */
+      if (result.success) {
+
+        message.className =
+          'success';
+
+        document
+          .getElementById(
+            'registerForm'
+          )
+          .reset();
+
+
+        button.disabled = true;
+
+        button.textContent =
+          'ส่งข้อมูลแล้ว';
+
+        return;
+      }
+
+
+      /*
+       * อยู่ระหว่างตรวจสอบ
+       */
+      if (result.status === 'pending') {
+
+        message.className =
+          'warning';
+
+        button.disabled = false;
+
+        button.textContent =
+          'ลงทะเบียน';
+
+        return;
+      }
+
+
+      /*
+       * ได้รับการอนุมัติแล้ว
+       */
+      if (result.status === 'approved') {
+
+        message.className =
+          'success';
+
+        button.disabled = true;
+
+        button.textContent =
+          'ได้รับการอนุมัติแล้ว';
+
+        return;
+      }
+
+
+      /*
+       * Error อื่น ๆ
+       */
+      message.className =
+        'error';
+
+      button.disabled = false;
+
+      button.textContent =
+        'ลงทะเบียน';
+    }
+  );
 
 
   initializeLiff();

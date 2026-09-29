@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ลงทะเบียนเข้าร่วม OpenChat</title>
+
+  <!-- LINE LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      background: #f5f7f9;
+      color: #222;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    #lineStatus {
+      padding: 12px;
+      border-radius: 10px;
+      background: #f0f2f4;
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+
+    .required {
+      color: #d93025;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d5d9dd;
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #06c755;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 17px;
+      font-weight: bold;
+      background: #06c755;
+      color: white;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #message {
+      display: none;
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      line-height: 1.6;
+    }
+
+    .success {
+      display: block !important;
+      background: #e8f7ed;
+      color: #166534;
+    }
+
+    .error {
+      display: block !important;
+      background: #fdecec;
+      color: #b42318;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>ลงทะเบียนเข้าร่วม OpenChat</h1>
+
+  <div class="subtitle">
+    สำหรับผู้ประกอบการสถานพยาบาล<br>
+    จังหวัดสุพรรณบุรี
+  </div>
+
+  <div id="lineStatus">
+    กำลังเชื่อมต่อบัญชี LINE...
+  </div>
+
+  <form id="registerForm">
+
+    <div class="form-group">
+      <label>
+        ชื่อ-นามสกุล
+        <span class="required">*</span>
+      </label>
+
+      <input
+        type="text"
+        id="fullName"
+        placeholder="กรอกชื่อ-นามสกุล"
+        required>
+    </div>
+
+    <div class="form-group">
+      <label>
+        ชื่อสถานพยาบาล
+        <span class="required">*</span>
+      </label>
+
+      <input
+        type="text"
+        id="facilityName"
+        placeholder="กรอกชื่อสถานพยาบาล"
+        required>
+    </div>
+
+    <div class="form-group">
+      <label>
+        ตำแหน่ง / หน้าที่
+        <span class="required">*</span>
+      </label>
+
+      <input
+        type="text"
+        id="position"
+        placeholder="เช่น ผู้รับอนุญาต ผู้ดำเนินการ เจ้าหน้าที่"
+        required>
+    </div>
+
+    <button
+      type="submit"
+      id="submitButton"
+      disabled>
+      กำลังเชื่อมต่อ LINE...
+    </button>
+
+  </form>
+
+  <div id="message"></div>
+
+</div>
+
+<script>
+
+  const LIFF_ID = '2011774617-WRY44KK3';
+
+  let lineUserId = '';
+  let lineDisplayName = '';
+
+  async function initializeLiff() {
+
+    const status = document.getElementById('lineStatus');
+    const button = document.getElementById('submitButton');
+
+    try {
+
+      status.textContent = '1/4 กำลังตรวจสอบ LIFF SDK...';
+
+      if (typeof liff === 'undefined') {
+        throw new Error('โหลด LIFF SDK ไม่สำเร็จ');
+      }
+
+      status.textContent = '2/4 กำลังเริ่มต้น LIFF...';
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      status.textContent = '3/4 LIFF เริ่มต้นสำเร็จ';
+
+      if (!liff.isLoggedIn()) {
+
+        status.textContent = 'กำลังเข้าสู่ระบบ LINE...';
+
+        liff.login();
+        return;
+      }
+
+      status.textContent = '4/4 กำลังอ่านข้อมูล LINE...';
+
+      const profile = await liff.getProfile();
+
+      lineUserId = profile.userId;
+      lineDisplayName = profile.displayName;
+
+      status.textContent =
+        'เชื่อมต่อ LINE แล้ว : ' + lineDisplayName;
+
+      status.style.background = '#e8f7ed';
+      status.style.color = '#166534';
+
+      button.disabled = false;
+      button.textContent = 'ลงทะเบียน';
+
+    } catch (error) {
+
+      console.error(error);
+
+      status.textContent =
+        'ERROR: ' +
+        (error.code ? error.code + ' - ' : '') +
+        (error.message || String(error));
+
+      status.style.background = '#fdecec';
+      status.style.color = '#b42318';
+
+      button.disabled = true;
+      button.textContent = 'ไม่สามารถลงทะเบียนได้';
+    }
+  }
+
+
+  document
+    .getElementById('registerForm')
+    .addEventListener('submit', function(event) {
+
+      event.preventDefault();
+
+      const message = document.getElementById('message');
+
+      message.textContent =
+        'ทดสอบสำเร็จ — เชื่อมต่อบัญชี LINE ได้แล้ว : ' +
+        lineDisplayName;
+
+      message.className = 'success';
+
+    });
+
+
+  initializeLiff();
+
+</script>
+
+</body>
+</html>

@@ -205,6 +205,7 @@
 
   let lineUserId = '';
   let lineDisplayName = '';
+  let lineIdToken = '';
 
 
   async function initializeLiff() {
@@ -238,6 +239,15 @@
 
       lineDisplayName =
         profile.displayName;
+
+      lineIdToken =
+        liff.getIDToken();
+
+      if (!lineIdToken) {
+        throw new Error(
+          'ไม่สามารถรับ LINE ID Token ได้'
+        );
+      }
 
 
       status.textContent =
@@ -365,6 +375,11 @@
           formData.append(
             'lineDisplayName',
             lineDisplayName
+          );
+
+          formData.append(
+            'idToken',
+            lineIdToken
           );
 
           formData.append(
